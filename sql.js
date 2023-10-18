@@ -1,21 +1,17 @@
 const mysql = require('mysql2');
 
-const db = mysql.createConnection(
-    {
-        host: 'localhost',
-        user: 'root',
-        password: 'password',
-        database: 'company_db'
-    },
-    
-);
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: 'password',
+    database: 'company_db'
+});
 
 const viewDepts = () => {
-    const sql = `SELECT * FROM departments`
-    // How to choose correct error message?
+    const sql = `SELECT * FROM departments`;
     db.query(sql, (err, results) => {
         if (err) {
-            res.status(500).json({ error: err.message });
+            console.error(err.message);
             return;
         }
         console.log(results);
@@ -23,93 +19,75 @@ const viewDepts = () => {
 };
 
 const viewRoles = () => {
-    const sql = `SELECT * FROM roles`
+    const sql = `SELECT * FROM roles`;
+    db.query(sql, (err, results) => {
+        if (err) {
+            console.error(err.message);
+            return;
+        }
     
-    db.query(sql, (err, results) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        console.log(results);
     });
 };
 
-const viewEmployees = () => {
-    const sql = `SELECT * FROM employees`
+const findEmployees = () => {
+    const sql = `SELECT * FROM employees`;
+    return db.promise().query(sql)
 
-    db.query(sql, (err, results) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        console.log(results);
-    });
+   
 };
 
-const addDept = () => {
-    const sql = `
-    INSERT INTO 
-    VALUES
-    `
-
-    db.query(sql, (err, results) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
+const addDept = (departmentName) => {
+    const sql = `INSERT INTO departments SET ?`;
+    return db.promise().query(sql, departmentName);
         }
-        console.log(results);
-    });
-};
 
-const addRole = () => {
-    const sql = `
-    INSERT INTO 
-    VALUES
-    `
-
-    db.query(sql, (err, results) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        console.log(results);
-    });
-};
-
+const addRole = (roleTitle) => {
+    const sql = `INSERT INTO roles SET ?`;
+    return db.promise().query(sql, roleTitle)
+}
 const addEmployee = (first, last, role, manager) => {
     
-    const roleID = db.query(`SELECT id FROM roles WHERE title = ${role}`);
-    const managerID = db.query(`SELECT id FROM employees WHERE CONCAT(first_name, " ", last_name) = ${manager}`);
+    const sqlRoleID = `SELECT id FROM roles WHERE title = ?`;
+    const sqlManagerID = `SELECT id FROM employees WHERE CONCAT(first_name, " ", last_name) = ?`;
 
-    const sql = `
-    INSERT INTO employees (first_name, last_name, role_id, manager_id)
-    VALUES (${first}, ${last}, ${roleID}, ${managerID})
-    `
+    let roleID, managerID;
 
-    db.query(sql, (err, results) => {
+
+    db.query(sqlRoleID, [role], (err, results) => {
         if (err) {
-            res.status(500).json({ error: err.message });
+            console.error(err.message);
+            return;
+        }
+        roleID = results[0].id; 
+
+        db.query(sqlManagerID, [manager], (err, results) => {
+            if (err) {
+                console.error(err.message);
+                return;
+            }
+            managerID = results[0].id; 
+
+            const sql = `INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)`;
+            db.query(sql, [first, last, roleID, managerID], (err, results) => {
+                if (err) {
+                    console.error(err.message);
+                    return;
+                }
+                console.log(results);
+            });
+        });
+    });
+};
+
+const updateEmployee = (employeeId, newRoleId) => {
+    const sql = `UPDATE employees SET role_id = ? WHERE id = ?`;
+    db.query(sql, [newRoleId, employeeId], (err, results) => {
+        if (err) {
+            console.error(err.message);
             return;
         }
         console.log(results);
     });
 };
 
-const updateEmployee = () => {
-    const sql = `
-    UPDATE
-    SET
-    WHERE
-    `
-
-    db.query(sql, (err, results) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        console.log(results);
-    });
-};
-
-
-module.exports = { viewDepts, viewRoles, viewEmployees, addDept, addRole, addEmployee, updateEmployee };
+module.exports = { viewDepts, viewRoles, findEmployees, addDept, addRole, addEmployee, updateEmployee };

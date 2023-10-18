@@ -1,5 +1,5 @@
 const inquirer = require('inquirer');
-const { viewDepts, viewRoles, viewEmployees, addDept, addRole, addEmployee, updateEmployee } = require('./sql');
+const { viewDepts, viewRoles, findEmployees, addDept, addRole, addEmployee, updateEmployee } = require('./sql');
 const mysql = require('mysql2');
 
 const db = mysql.createConnection(
@@ -28,15 +28,15 @@ const starterPrompt = () => {
                 break;
                 case 'Add Employee': addEmployeePrompt();
                 break;
-                // case 'Update Employee Role': updateEmployee();
+               
                 break;
                 case 'View All Roles': viewRoles();
                 break;
-                // case 'Add Role': addRole();
+            
                 break;
                 case 'View All Departments': viewDepts();
                 break;
-                // case 'Add Department': addDept();
+               
                 break;
             }
         });
@@ -82,6 +82,14 @@ const addEmployeePrompt = () => {
         })
         .then(() => starterPrompt())
 };
-const init = () => starterPrompt();
-init()
-module.exports = { starterPrompt };
+function viewEmployees() {
+    findEmployees().then(function([rows]) {
+        const employees = rows;
+        console.table(employees);
+    })
+    .then(function() {
+        starterPrompt();
+
+    })
+}
+starterPrompt();
