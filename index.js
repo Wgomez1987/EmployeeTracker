@@ -2,15 +2,6 @@ const inquirer = require('inquirer');
 const { viewDepts, viewRoles, findEmployees, addDept, addRole, addEmployee, updateEmployee } = require('./sql');
 const mysql = require('mysql2');
 
-const db = mysql.createConnection(
-    {
-        host: 'localhost',
-        user: 'root',
-        password: 'password',
-        database: 'company_db'
-    },
-    console.log(`Connected to the company_db.`)
-);
 
 const starterPrompt = () => {
     return inquirer
@@ -24,22 +15,49 @@ const starterPrompt = () => {
         ])
         .then(({ landing }) => {
             switch (landing) {
-                case 'View All Employees': viewEmployees();
+                case 'View All Employees': viewEmployees(starterPrompt);
                 break;
                 case 'Add Employee': addEmployeePrompt();
                 break;
                
                 break;
-                case 'View All Roles': viewRoles();
+                case 'View All Roles': viewRoles(starterPrompt);
                 break;
             
                 break;
-                case 'View All Departments': viewDepts();
+                case 'View All Departments': viewDepts(starterPrompt);
                 break;
                
                 break;
+                case 'Add Role': addRolePrompt();
+                break;
             }
         });
+};
+const addRolePrompt = () => {
+    return inquirer
+        .prompt([
+            {
+                type: 'input',
+                name: 'roleTitle',
+                message: 'Enter the name of the new role:'
+            },
+            {
+                type: 'input',
+                name: 'roleSalary',
+                message: 'Enter the salary for this role:'
+            },
+            {
+                type: 'list',
+                name: 'departmentId',
+                message: 'Which department does this role belong to?',
+                choices: getDepartments()
+            }
+        ])
+        .then(({ roleTitle, roleSalary, departmentId }) => {
+            addRole(roleTitle, roleSalary, departmentId);
+        })
+        .then(() => starterPrompt())
 };
 
 const addEmployeePrompt = () => {

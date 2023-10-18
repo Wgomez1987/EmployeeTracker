@@ -25,33 +25,36 @@ const viewRoles = () => {
             console.error(err.message);
             return;
         }
-    
+        console.log(results);
     });
 };
 
 const findEmployees = () => {
     const sql = `SELECT * FROM employees`;
     return db.promise().query(sql)
-
-   
 };
 
 const addDept = (departmentName) => {
     const sql = `INSERT INTO departments SET ?`;
     return db.promise().query(sql, departmentName);
-        }
+};
 
-const addRole = (roleTitle) => {
-    const sql = `INSERT INTO roles SET ?`;
-    return db.promise().query(sql, roleTitle)
-}
+const addRole = (roleTitle, roleSalary, departmentId) => {
+    const sql = `INSERT INTO roles (title, salary, department_id) VALUES (?, ?, ?)`;
+    db.query(sql, [roleTitle, roleSalary, departmentId], (err, results) => {
+        if (err) {
+            console.error(err.message);
+            return;
+        }
+        console.log('Added role successfully!');
+    });
+};
+
 const addEmployee = (first, last, role, manager) => {
-    
     const sqlRoleID = `SELECT id FROM roles WHERE title = ?`;
     const sqlManagerID = `SELECT id FROM employees WHERE CONCAT(first_name, " ", last_name) = ?`;
 
     let roleID, managerID;
-
 
     db.query(sqlRoleID, [role], (err, results) => {
         if (err) {
