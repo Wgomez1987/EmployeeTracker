@@ -15,60 +15,68 @@ const starterPrompt = () => {
         ])
         .then(({ landing }) => {
             switch (landing) {
-                case 'View All Employees': viewEmployees(starterPrompt);
+                case 'View All Employees': viewEmployees();
                 break;
                 case 'Add Employee': addEmployeePrompt();
                 break;
-               
+                case 'Update Employee Role': updateEmployeePrompt(); // You may need to add a function for this
                 break;
-                case 'View All Roles': viewRoles(starterPrompt);
-                break;
-            
-                break;
-                case 'View All Departments': viewDepts(starterPrompt);
-                break;
-               
+                case 'View All Roles': viewRoles();
                 break;
                 case 'Add Role': addRolePrompt();
+                break;
+                case 'View All Departments': viewDepts();
+                break;
+                case 'Add Department': addDepartmentPrompt(); // You may need to add a function for this
                 break;
             }
         });
 };
-const addRolePrompt = () => {
-    return inquirer
-        .prompt([
-            {
-                type: 'input',
-                name: 'roleTitle',
-                message: 'Enter the name of the new role:'
-            },
-            {
-                type: 'input',
-                name: 'roleSalary',
-                message: 'Enter the salary for this role:'
-            },
-            {
-                type: 'list',
-                name: 'departmentId',
-                message: 'Which department does this role belong to?',
-                choices: getDepartments()
-            }
-        ])
-        .then(({ roleTitle, roleSalary, departmentId }) => {
-            addRole(roleTitle, roleSalary, departmentId);
-        })
-        .then(() => starterPrompt())
+
+function viewEmployees() {
+    findEmployees().then(function([rows]) {
+        const employees = rows;
+        console.table(employees);
+    })
+    .then(function() {
+        starterPrompt();
+    });
 };
 
-const addEmployeePrompt = () => {
+const addEmployeePrompt = async () => {
+    const roleChoices = await getRoles();
+    const managerChoices = await getManagers();
 
-    const getRoles = () => {
-       return db.query(`SELECT title AS name FROM roles`)
+    return inquirer
+    .prompt([
+        {
+            type: 'input',
+            name: 'firstName',
+            message: "what's the employee's first name?"
+        },
+        {
+            type: 'input',
+            name: 'role',
+            message: "What is the employee's role?",
+            choices: roleChoices()
+        },
+        {
+            type: 'list',
+            name: 'manager',
+            message: "Who is the employee's manager?",
+            choices: managerChoices()
+        }
+    ])
+    .then(({ firstName, lastName, role, manager}) => {
+        addEmployee(firstName, lastName, role, manager)
+    })
+    .then(() => starterPrompt());
     };
 
-    const getManagers = () => {
-        return db.query(`SELECT CONCAT(first_name, " ", last_name) AS name FROM employees`)
-     };
+const getManagers = async () => {
+    const [rows] = await db.promise().query(`SELECT CONCAT(first_name, " ", last_name) AS name FROM employees`);
+    return rows.map(row => row.name);
+
 
     return inquirer
         .prompt([
@@ -99,7 +107,82 @@ const addEmployeePrompt = () => {
             addEmployee(firstName, lastName, role, manager)
         })
         .then(() => starterPrompt())
+
+const addRolePrompt = () => {
+    const getDepartments = () => {
+        return db.query(`SELECT department_name AS name FROM departments`)
+    };
+
+    return inquirer
+        .prompt([
+            {
+                type: 'input',
+                name: 'roleTitle',
+                message: 'Enter the role title:'
+            },
+            {
+                type: 'input',
+                name: 'roleSalary',
+                message: 'Enter the salary for this role:'
+            },
+            {
+                type: 'list',
+                name: 'department',
+                message: 'Which department does this role belong to?',
+                choices: getDepartments()
+            }
+        ])
+        .then(({ roleTitle, roleSalary, department }) => {
+            addRole(roleTitle, roleSalary, department);
+        })
+        .then(() => starterPrompt());
 };
+const updateEmployeePrompt = () => {
+    const getEmployees = () => {
+        return db.query(`SELECT CONCAT(first_name, " ", last_name) AS name FROM employees`);
+    };
+
+    const getRoles = async () => {
+        const [rows] = await db.promise().query(`SELECT title AS name FROM roles`);
+       return rows.map(row => row.name);
+    };
+
+    return inquirer
+        .prompt([
+            {
+                type: 'list',
+                name: 'employee',
+                message: 'Which employee do you want to update?',
+                choices: getEmployees()
+            },
+            {
+                type: 'list',
+                name: 'newRole',
+                message: 'Select the new role for the employee:',
+                choices: getRoles()
+            }
+        ])
+        .then(({ employee, newRole }) => {
+            updateEmployee(employee, newRole);
+        })
+        .then(() => starterPrompt());
+};
+
+const addDepartmentPrompt = () => {
+    return inquirer
+        .prompt([
+            {
+                type: 'input',
+                name: 'departmentName',
+                message: 'Enter the name of the new department:'
+            }
+        ])
+        .then(({ departmentName }) => {
+            addDept(departmentName);
+        })
+        .then(() => starterPrompt());
+};
+
 function viewEmployees() {
     findEmployees().then(function([rows]) {
         const employees = rows;
@@ -107,7 +190,7 @@ function viewEmployees() {
     })
     .then(function() {
         starterPrompt();
-
-    })
+    });
 }
+
 starterPrompt();
