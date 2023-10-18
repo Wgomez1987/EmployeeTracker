@@ -14,32 +14,51 @@ const viewDepts = () => {
             console.error(err.message);
             return;
         }
-        console.log(results);
+        console.table(results);
     });
 };
 
-const viewRoles = () => {
-    const sql = `SELECT * FROM roles`;
-    db.query(sql, (err, results) => {
-        if (err) {
-            console.error(err.message);
-            return;
-        }
-        console.log(results);
-    });
-};
+// const viewRoles = () => {
+//     const sql = `SELECT * FROM roles`;
+//     db.query(sql, (err, results) => {
+//         if (err) {
+//             console.error(err.message);
+//             return;
+//         }
+//         console.table(results);
+//     });
+// };
 
 const findEmployees = () => {
     const sql = `SELECT * FROM employees`;
     return db.promise().query(sql)
 };
 
-const addDept = (departmentName) => {
-    const sql = `INSERT INTO departments SET ?`;
-    return db.promise().query(sql, departmentName);
+const findRoles = () => {
+    const sql = `SELECT * FROM roles`;
+    return db.promise().query(sql)
 };
 
-const addRole = (roleTitle, roleSalary, departmentId) => {
+const findDepartments = () => {
+    const sql = `SELECT * FROM departments`;
+    return db.promise().query(sql)
+}
+
+const addDept = (departmentName) => {
+    const sql = `INSERT INTO departments (name) VALUES (?)`;
+    db.query(sql, departmentName);
+};
+
+const addRole = (roleTitle, roleSalary, departmentName) => {
+    const sqlDepartmentId = `SELECT id FROM departments WHERE name = ?`
+    let departmentId;
+    db.query(sqlDepartmentId, [departmentName], (err, results) => {
+        if (err) {
+            console.error(err.message);
+            return;
+        }
+        departmentId = results[0].id;
+    });
     const sql = `INSERT INTO roles (title, salary, department_id) VALUES (?, ?, ?)`;
     db.query(sql, [roleTitle, roleSalary, departmentId], (err, results) => {
         if (err) {
@@ -76,7 +95,7 @@ const addEmployee = (first, last, role, manager) => {
                     console.error(err.message);
                     return;
                 }
-                console.log(results);
+                // console.log(results);
             });
         });
     });
@@ -93,4 +112,4 @@ const updateEmployee = (employeeId, newRoleId) => {
     });
 };
 
-module.exports = { viewDepts, viewRoles, findEmployees, addDept, addRole, addEmployee, updateEmployee };
+module.exports = { db, findDepartments, viewDepts, findEmployees, addDept, addRole, addEmployee, updateEmployee, findRoles };

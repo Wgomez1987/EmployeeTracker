@@ -1,5 +1,5 @@
 const inquirer = require('inquirer');
-const { viewDepts, viewRoles, findEmployees, addDept, addRole, addEmployee, updateEmployee } = require('./sql');
+const { db, viewDepts, findEmployees, addDept, addRole, addEmployee, updateEmployee, findRoles, findDepartments } = require('./sql');
 const mysql = require('mysql2');
 
 
@@ -16,103 +16,112 @@ const starterPrompt = () => {
         .then(({ landing }) => {
             switch (landing) {
                 case 'View All Employees': viewEmployees();
-                break;
+                    break;
                 case 'Add Employee': addEmployeePrompt();
-                break;
-                case 'Update Employee Role': updateEmployeePrompt(); // You may need to add a function for this
-                break;
+                    break;
+                case 'Update Employee Role': updateEmployeePrompt();
+                    break;
                 case 'View All Roles': viewRoles();
-                break;
+                    break;
                 case 'Add Role': addRolePrompt();
-                break;
-                case 'View All Departments': viewDepts();
-                break;
-                case 'Add Department': addDepartmentPrompt(); // You may need to add a function for this
-                break;
+                    break;
+                case 'View All Departments': viewDepartments();
+                    break;
+                case 'Add Department': addDepartmentPrompt();
+                    break;
             }
         });
 };
 
 function viewEmployees() {
-    findEmployees().then(function([rows]) {
+    findEmployees().then(function ([rows]) {
         const employees = rows;
         console.table(employees);
     })
-    .then(function() {
-        starterPrompt();
-    });
+        .then(function () {
+            starterPrompt();
+        });
 };
 
-const addEmployeePrompt = async () => {
-    const roleChoices = await getRoles();
-    const managerChoices = await getManagers();
-
-    return inquirer
-    .prompt([
-        {
-            type: 'input',
-            name: 'firstName',
-            message: "what's the employee's first name?"
-        },
-        {
-            type: 'input',
-            name: 'role',
-            message: "What is the employee's role?",
-            choices: roleChoices()
-        },
-        {
-            type: 'list',
-            name: 'manager',
-            message: "Who is the employee's manager?",
-            choices: managerChoices()
-        }
-    ])
-    .then(({ firstName, lastName, role, manager}) => {
-        addEmployee(firstName, lastName, role, manager)
+function viewRoles() {
+    findRoles().then(function ([rows]) {
+        const roles = rows;
+        console.table(roles);
     })
-    .then(() => starterPrompt());
-    };
+        .then(function () {
+            starterPrompt();
+        });
+};
+
+function viewDepartments() {
+    findDepartments().then(function ([rows]) {
+        const roles = rows;
+        console.table(roles);
+    })
+        .then(function () {
+            starterPrompt();
+        });
+};
+
+const getDepartments = async () => {
+    const [rows] = await db.promise().query(`SELECT name FROM departments`)
+    return rows.map(row => row.name);
+};
 
 const getManagers = async () => {
     const [rows] = await db.promise().query(`SELECT CONCAT(first_name, " ", last_name) AS name FROM employees`);
     return rows.map(row => row.name);
+};
 
+const getRoles = async () => {
+    const [rows] = await db.promise().query(`SELECT title AS name FROM roles`);
+    return rows;
+};
+
+const getEmployees = async () => {
+    const [rows] = await db.promise().query(`SELECT CONCAT(first_name, " ", last_name) AS name FROM employees`);
+    return rows.map(row => row.name);
+};
+
+
+const addEmployeePrompt = async () => {
+    const managerChoices = await getManagers();
+    const roleChoices = await getRoles();
 
     return inquirer
         .prompt([
             {
                 type: 'input',
                 name: 'firstName',
-                message: "What the employee's first name?"
+                message: "what's the employee's first name?"
             },
             {
                 type: 'input',
                 name: 'lastName',
-                message: "What the employee's last name?"
+                message: "what's the employee's last name?"
             },
             {
                 type: 'list',
                 name: 'role',
                 message: "What is the employee's role?",
-                choices: getRoles()
+                choices: getRoles
             },
             {
                 type: 'list',
                 name: 'manager',
                 message: "Who is the employee's manager?",
-                choices: getManagers()
+                choices: managerChoices
             }
         ])
         .then(({ firstName, lastName, role, manager }) => {
             addEmployee(firstName, lastName, role, manager)
         })
-        .then(() => starterPrompt())
+        .then(() => starterPrompt());
+};
 
-const addRolePrompt = () => {
-    const getDepartments = () => {
-        return db.query(`SELECT department_name AS name FROM departments`)
-    };
 
+const addRolePrompt = async () => {
+    const departmentChoices = await getDepartments()
     return inquirer
         .prompt([
             {
@@ -129,7 +138,7 @@ const addRolePrompt = () => {
                 type: 'list',
                 name: 'department',
                 message: 'Which department does this role belong to?',
-                choices: getDepartments()
+                choices: departmentChoices
             }
         ])
         .then(({ roleTitle, roleSalary, department }) => {
@@ -137,29 +146,21 @@ const addRolePrompt = () => {
         })
         .then(() => starterPrompt());
 };
-const updateEmployeePrompt = () => {
-    const getEmployees = () => {
-        return db.query(`SELECT CONCAT(first_name, " ", last_name) AS name FROM employees`);
-    };
-
-    const getRoles = async () => {
-        const [rows] = await db.promise().query(`SELECT title AS name FROM roles`);
-       return rows.map(row => row.name);
-    };
-
+const updateEmployeePrompt = async () => {
+    const employeeChoices = await getEmployees();
     return inquirer
         .prompt([
             {
                 type: 'list',
                 name: 'employee',
                 message: 'Which employee do you want to update?',
-                choices: getEmployees()
+                choices: employeeChoices
             },
             {
                 type: 'list',
                 name: 'newRole',
                 message: 'Select the new role for the employee:',
-                choices: getRoles()
+                choices: getRoles
             }
         ])
         .then(({ employee, newRole }) => {
@@ -183,14 +184,5 @@ const addDepartmentPrompt = () => {
         .then(() => starterPrompt());
 };
 
-function viewEmployees() {
-    findEmployees().then(function([rows]) {
-        const employees = rows;
-        console.table(employees);
-    })
-    .then(function() {
-        starterPrompt();
-    });
-}
 
 starterPrompt();
